@@ -3,10 +3,12 @@ import { useState, useEffect } from "react";
 import Dot from "./components/dot";
 import MenuDrawer from "./components/menu-drawer";
 import GoalModal from "./components/goal-modal";
-import { Goal } from './data/types';
+import { Goal, GoalType } from './data/types';
 import { calculateProgress } from "./utils/progress";
 import { goalsService } from "./data/goals-service";
 import { useDatabaseReady } from "./providers/database-provider";
+import ProgressBar from "./components/progress-bar";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Hamburger menu icon component
 const HamburgerIcon = ({ onPress }: { onPress: () => void }) => (
@@ -21,95 +23,101 @@ const HamburgerIcon = ({ onPress }: { onPress: () => void }) => (
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f7f9fc',
+    backgroundColor: '#f4f6fa',
   },
   header: {
-    backgroundColor: 'white',
+    backgroundColor: '#fff',
     flexDirection: 'row',
     alignItems: "center",
-    padding: 15,
+    paddingVertical: 22,
+    paddingHorizontal: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#e5e7eb',
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#333',
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#22223b',
+    letterSpacing: 0.5,
   },
   headerSpacer: { width: 42 },
   mainArea: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: '#fff',
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-around',
     alignContent: 'space-around',
-    margin: 16,
-    borderRadius: 12,
+    margin: 20,
+    borderRadius: 18,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 1,
-    padding: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 2,
+    padding: 16,
+    borderWidth: 0.5,
+    borderColor: '#e5e7eb',
   },
   bottomBar: {
-    padding: 15,
-    backgroundColor: 'white',
+    paddingVertical: 22,
+    paddingHorizontal: 20,
+    backgroundColor: '#fff',
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'row',
+    borderTopWidth: 0.5,
+    borderTopColor: '#e5e7eb',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
   },
   progressBarContainer: {
-    width: '80%',
-    height: 8,
+    width: '75%',
+    height: 14,
     backgroundColor: '#e0e0e0',
-    borderRadius: 4,
-    overflow: 'hidden'
+    borderRadius: 7,
+    overflow: 'hidden',
+    marginRight: 12,
   },
   progressBar: {
     height: '100%',
-    backgroundColor: '#34c759',
-    borderRadius: 4
+    backgroundColor: 'linear-gradient(90deg, #34c759 0%, #30bced 100%)',
+    borderRadius: 7,
   },
   progressText: {
-    marginLeft: 10,
-    color: '#333',
-    fontWeight: '500'
+    color: '#22223b',
+    fontWeight: '600',
+    fontSize: 16,
+    letterSpacing: 0.2,
   }
 });
 
-// Extracted ProgressBar component
-const ProgressBar = ({ percentage }: { percentage: number }) => (
-  <View style={styles.progressBarContainer}>
-    <View style={[styles.progressBar, { width: `${percentage}%` }]} />
-  </View>
-);
+const createDefaultGoal = async (): Promise<Goal> => {
+  return await goalsService.saveGoal({
+    name: "New Goal",
+    progress: 0,
+    type: GoalType.Percentage,
+  })
+};
 
 export default function Index() {
   const [totalDots, setTotalDots] = useState(0);
   const [menuVisible, setMenuVisible] = useState(false);
 
   const [goals, setGoals] = useState<Goal[]>([]);
-  const [currentGoalIndex, setCurrentGoalIndex] = useState(0);
+  const [currentGoalIndex, setCurrentGoalIndex] = useState(-1);
   const [goalEditModalVisible, setGoalEditModalVisible] = useState(false);
   const [editingGoalIndex, setEditingGoalIndex] = useState<number | null>(null);
 
   const dbReady = useDatabaseReady();
-
-  // Get current goal data
-  const currentGoal = goals[currentGoalIndex];
-
-  // Calculate progress percentage based on goal type
-  let progressPercentage = calculateProgress(currentGoal);
 
   // Load goals from DB on mount
   useEffect(() => {
@@ -118,25 +126,42 @@ export default function Index() {
     async function fetchGoals() {
       try {
         const loadedGoals = await goalsService.getGoals();
-        if (loadedGoals.length > 0) {
-          setGoals(loadedGoals);
-        } else {
-          // If no goals, set a default
-          setGoals([{ name: "New Goal", progress: 0, type: 'percentage' }]);
+        let initialGoals = loadedGoals;
+        if (loadedGoals.length === 0) {
+          // If no goals, set a default with id
+          initialGoals = [await createDefaultGoal()];
         }
+        setGoals(initialGoals);
+
+        // Try to restore last selected goal index
+        const savedIndex = await AsyncStorage.getItem('currentGoalIndex');
+        let index = 0;
+        if (savedIndex !== null) {
+          const parsed = parseInt(savedIndex, 10);
+          if (!isNaN(parsed) && parsed >= 0 && parsed < initialGoals.length) {
+            index = parsed;
+          }
+        }
+        setCurrentGoalIndex(index);
       } catch (error) {
         console.error("Failed to load goals:", error);
-        setGoals([{ name: "New Goal", progress: 0, type: 'percentage' }]);
+        setGoals([await createDefaultGoal()]);
+        setCurrentGoalIndex(0);
       }
     }
     fetchGoals();
   }, [dbReady]);
 
-  // Function to show edit modal for a specific goal
-  const editGoal = (index: number) => {
-    setEditingGoalIndex(index);
-    setGoalEditModalVisible(true);
-  };
+  // Save currentGoalIndex to AsyncStorage whenever it changes
+  useEffect(() => {
+    if (currentGoalIndex !== -1) {
+      AsyncStorage.setItem('currentGoalIndex', currentGoalIndex.toString());
+    }
+  }, [currentGoalIndex]);
+
+  if (currentGoalIndex === -1) {
+    return null;
+  }
 
   // Function to add a new goal
   const addNewGoal = () => {
@@ -144,11 +169,16 @@ export default function Index() {
     setGoalEditModalVisible(true);
   };
 
+  // Function to show edit modal for a specific goal
+  const editGoal = (index: number) => {
+    setEditingGoalIndex(index);
+    setGoalEditModalVisible(true);
+  };
+
   // Function to save a new or edited goal
   const saveGoal = async (goal: Goal) => {
     try {
-      const id = await goalsService.saveGoal(goal);
-      const newGoal = { ...goal, id };
+      const newGoal = await goalsService.saveGoal(goal);
 
       let newGoals;
       if (editingGoalIndex !== null) {
@@ -173,15 +203,14 @@ export default function Index() {
       if (goalToDelete.id) {
         await goalsService.deleteGoal(goalToDelete.id);
       }
+
       const newGoals = [...goals];
       newGoals.splice(index, 1);
 
-      setGoals(newGoals);
-
       // If we deleted the current goal or a goal before it, adjust the current index
       if (newGoals.length === 0) {
-        // If no goals left, reset to default
-        setGoals([{ name: "New Goal", progress: 0, type: 'percentage' }]);
+        // If no goals left, reset to default with id
+        setGoals([await createDefaultGoal()]);
         setCurrentGoalIndex(0);
       } else if (index <= currentGoalIndex) {
         // If we deleted the current goal or one before it
@@ -192,7 +221,11 @@ export default function Index() {
           // If we deleted a goal before the current one, shift index down
           setCurrentGoalIndex(currentGoalIndex - 1);
         }
+
+        setGoals(newGoals);
       }
+
+      setMenuVisible(false);
     } catch (error) {
       console.error("Failed to delete goal:", error);
     }
@@ -207,7 +240,7 @@ export default function Index() {
   };
 
   // Each dot takes up roughly 40x40 space (20px dot + 10px margin on each side)
-  const dotSize = 40;
+  const dotSize = 42;
 
   // Function to handle layout event
   const handleMainAreaLayout = (event: LayoutChangeEvent) => {
@@ -216,11 +249,14 @@ export default function Index() {
     // Calculate dots based on actual dimensions
     const dotsPerRow = Math.floor(width / dotSize);
     const dotsPerColumn = Math.floor(height / dotSize);
+
     setTotalDots(dotsPerRow * dotsPerColumn);
   };
 
+  const progressPercentage = calculateProgress(goals[currentGoalIndex]);
+
   // Calculate how many dots should be marked as completed based on percentage
-  const completedDots = Math.floor(totalDots * (progressPercentage / 100));
+  const completedDots = Math.round(totalDots * (progressPercentage / 100));
 
   return (
     <View style={styles.container}>
@@ -229,7 +265,7 @@ export default function Index() {
         <HamburgerIcon onPress={() => setMenuVisible(true)} />
         <View style={{ flex: 1, alignItems: 'center' }}>
           <TouchableOpacity onPress={() => editGoal(currentGoalIndex)}>
-            <Text style={styles.headerTitle}>{currentGoal.name}</Text>
+            <Text style={styles.headerTitle}>{goals[currentGoalIndex].name}</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.headerSpacer} />
@@ -266,10 +302,7 @@ export default function Index() {
       </View>
 
       {/* Bottom line with text */}
-      <View style={styles.bottomBar}>
-        <ProgressBar percentage={progressPercentage} />
-        <Text style={styles.progressText}>{progressPercentage}%</Text>
-      </View>
+      <ProgressBar percentage={progressPercentage} />
     </View>
   );
 }

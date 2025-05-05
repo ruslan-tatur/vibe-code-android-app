@@ -1,6 +1,8 @@
 import { Goal } from "../data/types";
 
 export const calculateProgress = (goal: Goal): number => {
+  if (!goal) return 0;
+
   if (goal.type === 'percentage') {
     return goal.progress ?? 0;
   } else if (goal.type === 'timeframe' && goal.startDate && goal.endDate) {

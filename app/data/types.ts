@@ -1,4 +1,7 @@
-export type GoalType = 'percentage' | 'timeframe';
+export enum GoalType {
+  Percentage = 'percentage',
+  Timeframe = 'timeframe',
+}
 
 export interface Goal {
   id?: number;

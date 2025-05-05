@@ -4,98 +4,132 @@ import Slider from '@react-native-community/slider';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Text, View, TouchableOpacity, TextInput, StyleSheet } from "react-native";
 import { Goal, GoalType } from '../data/types';
+import DeleteConfirmationModal from './delete-confirmation-modal';
 
 const styles = StyleSheet.create({
   modal: {
-    margin: 20,
+    margin: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   container: {
-    backgroundColor: 'white',
-    borderRadius: 10,
-    padding: 20,
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    padding: 28,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.10,
+    shadowRadius: 24,
+    elevation: 8,
+    minWidth: 320,
+    maxWidth: 400,
+    alignSelf: 'center',
   },
   title: {
     fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 20,
+    fontWeight: '700',
+    color: '#22223b',
+    marginBottom: 24,
+    letterSpacing: 0.5,
+    textAlign: 'center',
   },
   label: {
-    marginBottom: 5,
+    marginBottom: 6,
+    color: '#22223b',
+    fontWeight: '600',
+    fontSize: 15,
   },
   inputContainer: {
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 5,
+    borderColor: '#e5e7eb',
+    borderRadius: 7,
+    backgroundColor: '#f7f9fc',
   },
   inputError: {
     borderColor: '#ff4d4f',
   },
   textInput: {
-    padding: 10,
+    padding: 12,
+    fontSize: 16,
+    color: '#22223b',
+    backgroundColor: 'transparent',
   },
   errorText: {
     color: '#ff4d4f',
-    fontSize: 12,
+    fontSize: 13,
     marginBottom: 10,
+    marginLeft: 2,
   },
   typeRow: {
     flexDirection: 'row',
-    marginBottom: 15,
+    marginBottom: 18,
+    gap: 8,
   },
   typeButton: {
     flex: 1,
-    padding: 10,
+    paddingVertical: 10,
     backgroundColor: '#f0f0f0',
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 5,
+    borderColor: '#e5e7eb',
+    borderRadius: 7,
     alignItems: 'center',
   },
   typeButtonActive: {
     backgroundColor: '#e6f7ff',
-    borderColor: '#1890ff',
+    borderColor: '#30bced',
   },
   section: {
-    marginBottom: 15,
+    marginBottom: 18,
   },
   datePicker: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 5,
-    padding: 10,
+    borderColor: '#e5e7eb',
+    borderRadius: 7,
+    padding: 12,
+    backgroundColor: '#f7f9fc',
   },
   buttonRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 10,
+    marginTop: 18,
+    alignItems: 'center',
   },
   deleteButton: {
-    padding: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
     backgroundColor: '#ff4d4f',
-    borderRadius: 5,
+    borderRadius: 7,
+    marginRight: 10,
   },
   deleteButtonText: {
     color: 'white',
+    fontWeight: '600',
+    fontSize: 15,
   },
   actionButtons: {
     flexDirection: 'row',
     marginLeft: 'auto',
+    gap: 8,
   },
   cancelButton: {
-    padding: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
     backgroundColor: '#f0f0f0',
-    borderRadius: 5,
-    marginRight: 10,
+    borderRadius: 7,
+    marginRight: 6,
   },
   saveButton: {
-    padding: 10,
-    backgroundColor: '#1890ff',
-    borderRadius: 5,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    backgroundColor: '#30bced',
+    borderRadius: 7,
   },
   saveButtonText: {
     color: 'white',
+    fontWeight: '600',
+    fontSize: 15,
   },
 });
 
@@ -115,7 +149,7 @@ const GoalModal = ({
   onDelete?: () => void;
 }) => {
   const [name, setName] = useState(initialGoal?.name || '');
-  const [type, setType] = useState<GoalType>(initialGoal?.type || 'percentage');
+  const [type, setType] = useState<GoalType>(initialGoal?.type || GoalType.Percentage);
   const [progress, setProgress] = useState(initialGoal?.progress || 0);
   const [displayProgress, setDisplayProgress] = useState(initialGoal?.progress || 0);
   const [endDate, setEndDate] = useState<Date | undefined>(initialGoal?.endDate);
@@ -127,11 +161,12 @@ const GoalModal = ({
     endDate?: string;
     startDate?: string;
   }>({});
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     if (visible) {
       setName(initialGoal?.name || '');
-      setType(initialGoal?.type || 'percentage');
+      setType(initialGoal?.type || GoalType.Percentage);
       setProgress(initialGoal?.progress || 0);
       setEndDate(initialGoal?.endDate);
       setStartDate(initialGoal?.startDate);
@@ -175,6 +210,7 @@ const GoalModal = ({
   const handleSave = () => {
     if (validateForm()) {
       onSave({
+        id: initialGoal?.id,
         name: name.trim(),
         progress,
         type,
@@ -185,195 +221,212 @@ const GoalModal = ({
   };
 
   return (
-    <Modal
-      isVisible={visible}
-      onBackdropPress={onClose}
-      onBackButtonPress={onClose}
-      style={styles.modal}
-    >
-      <View style={styles.container}>
-        <Text style={styles.title}>
-          {initialGoal ? 'Edit Goal' : 'New Goal'}
-        </Text>
+    <>
+      <Modal
+        isVisible={visible}
+        onBackdropPress={onClose}
+        onBackButtonPress={onClose}
+        style={styles.modal}
+      >
+        <View style={styles.container}>
+          <Text style={styles.title}>
+            {initialGoal ? 'Edit Goal' : 'New Goal'}
+          </Text>
 
-        {/* Goal Name Input */}
-        <Text style={styles.label}>Goal Description:</Text>
-        <View style={[
-          styles.inputContainer,
-          errors.name && styles.inputError,
-          { marginBottom: errors.name ? 5 : 15 }
-        ]}>
-          <TextInput
-            value={name}
-            onChangeText={(text) => {
-              setName(text);
-              if (errors.name) {
-                setErrors({ ...errors, name: undefined });
-              }
-            }}
-            style={styles.textInput}
-            placeholder="Enter your goal"
-            maxLength={50}
-          />
-        </View>
-        {errors.name && (
-          <Text style={styles.errorText}>{errors.name}</Text>
-        )}
-
-        {/* Goal Type Selection */}
-        <Text style={styles.label}>Goal Type:</Text>
-        <View style={styles.typeRow}>
-          <TouchableOpacity
-            style={[
-              styles.typeButton,
-              type === 'percentage' && styles.typeButtonActive,
-              { marginRight: 5 }
-            ]}
-            onPress={() => {
-              setType('percentage');
-              if (errors.endDate) {
-                setErrors({ ...errors, endDate: undefined });
-              }
-            }}
-          >
-            <Text>Percentage</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.typeButton,
-              type === 'timeframe' && styles.typeButtonActive,
-              { marginLeft: 5 }
-            ]}
-            onPress={() => setType('timeframe')}
-          >
-            <Text>Timeframe</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Conditional Fields based on Type */}
-        {type === 'percentage' && (
-          <View style={styles.section}>
-            <Text style={styles.label}>Initial Progress ({displayProgress}%):</Text>
-            <Slider
-              value={progress}
-              onValueChange={value => setDisplayProgress(Math.round(value))}
-              onSlidingComplete={value => {
-                setProgress(Math.round(value));
-                setDisplayProgress(Math.round(value));
+          {/* Goal Name Input */}
+          <Text style={styles.label}>Goal Description:</Text>
+          <View style={[
+            styles.inputContainer,
+            errors.name && styles.inputError,
+            { marginBottom: errors.name ? 5 : 15 }
+          ]}>
+            <TextInput
+              value={name}
+              onChangeText={(text) => {
+                setName(text);
+                if (errors.name) {
+                  setErrors({ ...errors, name: undefined });
+                }
               }}
-              minimumValue={0}
-              maximumValue={100}
-              step={1}
-              minimumTrackTintColor="#1890ff"
-              maximumTrackTintColor="#d9d9d9"
+              style={styles.textInput}
+              placeholder="Enter your goal"
+              maxLength={50}
             />
           </View>
-        )}
-
-        {type === 'timeframe' && (
-          <View style={{ marginBottom: errors.endDate ? 5 : 15 }}>
-            <Text style={styles.label}>Start Date:</Text>
-            <TouchableOpacity
-              onPress={() => setShowStartDatePicker(true)}
-              style={[
-                styles.datePicker,
-                errors.startDate && styles.inputError,
-                { marginBottom: errors.startDate ? 5 : 15 }
-              ]}
-            >
-              <Text style={{ flex: 1 }}>
-                {startDate ? startDate.toLocaleDateString() : "No date selected"}
-              </Text>
-            </TouchableOpacity>
-            {showStartDatePicker && (
-              <DateTimePicker
-                value={startDate || new Date()}
-                mode="date"
-                display="calendar"
-                onChange={(event, selectedDate) => {
-                  if (event.type === "set") {
-                    const currentDate = selectedDate || startDate;
-                    setStartDate(currentDate);
-                    if (errors.startDate) {
-                      setErrors({ ...errors, startDate: undefined });
-                    }
-                  }
-                  setShowStartDatePicker(false);
-                }}
-                style={{ marginLeft: 10 }}
-              />
-            )}
-            {errors.startDate && (
-              <Text style={styles.errorText}>{errors.startDate}</Text>
-            )}
-
-            <Text style={styles.label}>Target End Date:</Text>
-            <TouchableOpacity
-              onPress={() => setShowDatePicker(true)}
-              style={[
-                styles.datePicker,
-                errors.endDate && styles.inputError
-              ]}
-            >
-              <Text style={{ flex: 1 }}>
-                {endDate ? endDate.toLocaleDateString() : "No date selected"}
-              </Text>
-            </TouchableOpacity>
-            {showDatePicker && (
-              <DateTimePicker
-                value={endDate || new Date()}
-                mode="date"
-                display="calendar"
-                onChange={(event, selectedDate) => {
-                  if (event.type === "set") {
-                    const currentDate = selectedDate || endDate;
-                    setEndDate(currentDate);
-                    if (errors.endDate) {
-                      setErrors({ ...errors, endDate: undefined });
-                    }
-                  }
-                  setShowDatePicker(false);
-                }}
-                minimumDate={new Date()}
-                style={{ marginLeft: 10 }}
-              />
-            )}
-            {errors.endDate && (
-              <Text style={styles.errorText}>{errors.endDate}</Text>
-            )}
-          </View>
-        )}
-
-        {/* Buttons */}
-        <View style={styles.buttonRow}>
-          {isEditing && onDelete && (
-            <TouchableOpacity
-              style={styles.deleteButton}
-              onPress={onDelete}
-            >
-              <Text style={styles.deleteButtonText}>Delete</Text>
-            </TouchableOpacity>
+          {errors.name && (
+            <Text style={styles.errorText}>{errors.name}</Text>
           )}
 
-          <View style={styles.actionButtons}>
+          {/* Goal Type Selection */}
+          <Text style={styles.label}>Goal Type:</Text>
+          <View style={styles.typeRow}>
             <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={onClose}
+              style={[
+                styles.typeButton,
+                type === GoalType.Percentage && styles.typeButtonActive,
+                { marginRight: 5 }
+              ]}
+              onPress={() => {
+                setType(GoalType.Percentage);
+                if (errors.endDate) {
+                  setErrors({ ...errors, endDate: undefined });
+                }
+              }}
             >
-              <Text>Cancel</Text>
+              <Text>Percentage</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.saveButton}
-              onPress={handleSave}
+              style={[
+                styles.typeButton,
+                type === 'timeframe' && styles.typeButtonActive,
+                { marginLeft: 5 }
+              ]}
+              onPress={() => setType(GoalType.Timeframe)}
             >
-              <Text style={styles.saveButtonText}>Save</Text>
+              <Text>Timeframe</Text>
             </TouchableOpacity>
           </View>
+
+          {/* Conditional Fields based on Type */}
+          {type === 'percentage' && (
+            <View style={styles.section}>
+              <Text style={styles.label}>Initial Progress ({displayProgress}%):</Text>
+              <Slider
+                value={progress}
+                onValueChange={value => setDisplayProgress(Math.round(value))}
+                onSlidingComplete={value => {
+                  setProgress(Math.round(value));
+                  setDisplayProgress(Math.round(value));
+                }}
+                minimumValue={0}
+                maximumValue={100}
+                step={1}
+                minimumTrackTintColor="#1890ff"
+                maximumTrackTintColor="#d9d9d9"
+              />
+            </View>
+          )}
+
+          {type === 'timeframe' && (
+            <View style={{ marginBottom: errors.endDate ? 5 : 15 }}>
+              <Text style={styles.label}>Start Date:</Text>
+              <TouchableOpacity
+                onPress={() => setShowStartDatePicker(true)}
+                style={[
+                  styles.datePicker,
+                  errors.startDate && styles.inputError,
+                  { marginBottom: errors.startDate ? 5 : 15 }
+                ]}
+              >
+                <Text style={{ flex: 1 }}>
+                  {startDate ? startDate.toLocaleDateString() : "No date selected"}
+                </Text>
+              </TouchableOpacity>
+              {showStartDatePicker && (
+                <DateTimePicker
+                  value={startDate || new Date()}
+                  mode="date"
+                  display="calendar"
+                  onChange={(event, selectedDate) => {
+                    if (event.type === "set") {
+                      const currentDate = selectedDate || startDate;
+                      setStartDate(currentDate);
+                      if (errors.startDate) {
+                        setErrors({ ...errors, startDate: undefined });
+                      }
+                    }
+                    setShowStartDatePicker(false);
+                  }}
+                  style={{ marginLeft: 10 }}
+                />
+              )}
+              {errors.startDate && (
+                <Text style={styles.errorText}>{errors.startDate}</Text>
+              )}
+
+              <Text style={styles.label}>Target End Date:</Text>
+              <TouchableOpacity
+                onPress={() => setShowDatePicker(true)}
+                style={[
+                  styles.datePicker,
+                  errors.endDate && styles.inputError
+                ]}
+              >
+                <Text style={{ flex: 1 }}>
+                  {endDate ? endDate.toLocaleDateString() : "No date selected"}
+                </Text>
+              </TouchableOpacity>
+              {showDatePicker && (
+                <DateTimePicker
+                  value={endDate || new Date()}
+                  mode="date"
+                  display="calendar"
+                  onChange={(event, selectedDate) => {
+                    if (event.type === "set") {
+                      const currentDate = selectedDate || endDate;
+                      setEndDate(currentDate);
+                      if (errors.endDate) {
+                        setErrors({ ...errors, endDate: undefined });
+                      }
+                    }
+                    setShowDatePicker(false);
+                  }}
+                  minimumDate={new Date()}
+                  style={{ marginLeft: 10 }}
+                />
+              )}
+              {errors.endDate && (
+                <Text style={styles.errorText}>{errors.endDate}</Text>
+              )}
+            </View>
+          )}
+
+          {/* Buttons */}
+          <View style={styles.buttonRow}>
+            {isEditing && onDelete && (
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={() => setShowDeleteConfirm(true)}
+              >
+                <Text style={styles.deleteButtonText}>Delete</Text>
+              </TouchableOpacity>
+            )}
+
+            <View style={styles.actionButtons}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={onClose}
+              >
+                <Text>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={handleSave}
+              >
+                <Text style={styles.saveButtonText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
-      </View>
-    </Modal>
+      </Modal>
+      {isEditing && onDelete && (
+        <DeleteConfirmationModal
+          visible={showDeleteConfirm}
+          title="Delete Goal"
+          message={`Are you sure you want to delete "${initialGoal?.name}"?`}
+          onDelete={() => {
+            onDelete();
+            setShowDeleteConfirm(false);
+            onClose();
+          }}
+          onCancel={() => setShowDeleteConfirm(false)}
+          deleteLabel="Delete Goal"
+          cancelLabel="Cancel"
+        />
+      )}
+    </>
   );
 };
 

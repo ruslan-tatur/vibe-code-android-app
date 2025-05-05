@@ -57,10 +57,11 @@ class GoalsService {
     }
   }
 
-  async saveGoal(goal: Goal): Promise<number> {
+  async saveGoal(goal: Goal): Promise<Goal> {
     try {
       if (goal.id) {
         // Update existing goal
+        console.log('Updating goal:', goal);
         await db.runAsync(
           `UPDATE goals 
            SET name = ?, type = ?, progress = ?, startDate = ?, endDate = ?
@@ -74,8 +75,9 @@ class GoalsService {
             goal.id
           ]
         );
-        return goal.id;
+        return goal;
       } else {
+        console.log('Inserting new goal:', goal);
         // Insert new goal
         const result = await db.runAsync(
           `INSERT INTO goals (name, type, progress, startDate, endDate)
@@ -88,7 +90,10 @@ class GoalsService {
             goal.endDate?.toISOString() || null
           ]
         );
-        return result.lastInsertRowId;
+        return {
+          ...goal,
+          id: result.lastInsertRowId,
+        }
       }
     } catch (error) {
       console.error('Error saving goal:', error);
