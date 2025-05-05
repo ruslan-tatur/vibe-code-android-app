@@ -1,10 +1,12 @@
 import { Text, View, LayoutChangeEvent, TouchableOpacity, StyleSheet } from "react-native";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Dot from "./components/dot";
 import MenuDrawer from "./components/menu-drawer";
 import GoalModal from "./components/goal-modal";
 import { Goal } from './data/types';
 import { calculateProgress } from "./utils/progress";
+import { goalsService } from "./data/goals-service";
+import { useDatabaseReady } from "./providers/database-provider";
 
 // Hamburger menu icon component
 const HamburgerIcon = ({ onPress }: { onPress: () => void }) => (
@@ -96,22 +98,39 @@ export default function Index() {
   const [totalDots, setTotalDots] = useState(0);
   const [menuVisible, setMenuVisible] = useState(false);
 
-  // Sample goals data structure with corrected type
-  const [goals, setGoals] = useState<Goal[]>([
-    { name: "Learn React Native", progress: 30, type: 'percentage' },
-    { name: "Exercise Daily", progress: 85, type: 'percentage' },
-    { name: "Read 10 Books", progress: 20, type: 'percentage' },
-  ]);
-
+  const [goals, setGoals] = useState<Goal[]>([]);
   const [currentGoalIndex, setCurrentGoalIndex] = useState(0);
   const [goalEditModalVisible, setGoalEditModalVisible] = useState(false);
   const [editingGoalIndex, setEditingGoalIndex] = useState<number | null>(null);
+
+  const dbReady = useDatabaseReady();
 
   // Get current goal data
   const currentGoal = goals[currentGoalIndex];
 
   // Calculate progress percentage based on goal type
   let progressPercentage = calculateProgress(currentGoal);
+
+  // Load goals from DB on mount
+  useEffect(() => {
+    if (!dbReady) return;
+
+    async function fetchGoals() {
+      try {
+        const loadedGoals = await goalsService.getGoals();
+        if (loadedGoals.length > 0) {
+          setGoals(loadedGoals);
+        } else {
+          // If no goals, set a default
+          setGoals([{ name: "New Goal", progress: 0, type: 'percentage' }]);
+        }
+      } catch (error) {
+        console.error("Failed to load goals:", error);
+        setGoals([{ name: "New Goal", progress: 0, type: 'percentage' }]);
+      }
+    }
+    fetchGoals();
+  }, [dbReady]);
 
   // Function to show edit modal for a specific goal
   const editGoal = (index: number) => {
@@ -126,42 +145,56 @@ export default function Index() {
   };
 
   // Function to save a new or edited goal
-  const saveGoal = (goal: Goal) => {
-    const newGoals = [...goals];
+  const saveGoal = async (goal: Goal) => {
+    try {
+      const id = await goalsService.saveGoal(goal);
+      const newGoal = { ...goal, id };
 
-    if (editingGoalIndex !== null) {
-      // Edit existing goal
-      newGoals[editingGoalIndex] = goal;
-    } else {
-      // Add new goal
-      newGoals.push(goal);
-      setCurrentGoalIndex(newGoals.length - 1);
+      let newGoals;
+      if (editingGoalIndex !== null) {
+        // Edit existing goal
+        newGoals = [...goals];
+        newGoals[editingGoalIndex] = newGoal;
+      } else {
+        // Add new goal
+        newGoals = [...goals, newGoal];
+        setCurrentGoalIndex(newGoals.length - 1);
+      }
+      setGoals(newGoals);
+    } catch (error) {
+      console.error("Failed to save goal:", error);
     }
-
-    setGoals(newGoals);
   };
 
   // Function to delete a goal
-  const deleteGoal = (index: number) => {
-    const newGoals = [...goals];
-    newGoals.splice(index, 1);
-
-    setGoals(newGoals);
-
-    // If we deleted the current goal or a goal before it, adjust the current index
-    if (newGoals.length === 0) {
-      // If no goals left, reset to default
-      setGoals([{ name: "New Goal", progress: 0, type: 'percentage' }]);
-      setCurrentGoalIndex(0);
-    } else if (index <= currentGoalIndex) {
-      // If we deleted the current goal or one before it
-      if (currentGoalIndex >= newGoals.length) {
-        // If current index is now out of bounds
-        setCurrentGoalIndex(Math.max(0, newGoals.length - 1));
-      } else if (index < currentGoalIndex) {
-        // If we deleted a goal before the current one, shift index down
-        setCurrentGoalIndex(currentGoalIndex - 1);
+  const deleteGoal = async (index: number) => {
+    try {
+      const goalToDelete = goals[index];
+      if (goalToDelete.id) {
+        await goalsService.deleteGoal(goalToDelete.id);
       }
+      const newGoals = [...goals];
+      newGoals.splice(index, 1);
+
+      setGoals(newGoals);
+
+      // If we deleted the current goal or a goal before it, adjust the current index
+      if (newGoals.length === 0) {
+        // If no goals left, reset to default
+        setGoals([{ name: "New Goal", progress: 0, type: 'percentage' }]);
+        setCurrentGoalIndex(0);
+      } else if (index <= currentGoalIndex) {
+        // If we deleted the current goal or one before it
+        if (currentGoalIndex >= newGoals.length) {
+          // If current index is now out of bounds
+          setCurrentGoalIndex(Math.max(0, newGoals.length - 1));
+        } else if (index < currentGoalIndex) {
+          // If we deleted a goal before the current one, shift index down
+          setCurrentGoalIndex(currentGoalIndex - 1);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to delete goal:", error);
     }
   };
 

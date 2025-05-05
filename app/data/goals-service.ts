@@ -30,6 +30,7 @@ async function createTables(): Promise<void> {
         name TEXT NOT NULL,
         type TEXT NOT NULL,
         progress INTEGER,
+        startDate TEXT,
         endDate TEXT
       );
     `);
@@ -47,6 +48,7 @@ class GoalsService {
       return result.map((goal: Goal) => ({
         ...goal,
         // Convert stored date string back to Date object if it exists
+        startDate: goal.startDate ? new Date(goal.startDate) : undefined,
         endDate: goal.endDate ? new Date(goal.endDate) : undefined
       }));
     } catch (error) {
@@ -61,12 +63,13 @@ class GoalsService {
         // Update existing goal
         await db.runAsync(
           `UPDATE goals 
-           SET name = ?, type = ?, progress = ?, endDate = ?
+           SET name = ?, type = ?, progress = ?, startDate = ?, endDate = ?
            WHERE id = ?`,
           [
             goal.name,
             goal.type,
             goal.progress || null,
+            goal.startDate?.toISOString() || null,
             goal.endDate?.toISOString() || null,
             goal.id
           ]
@@ -75,12 +78,13 @@ class GoalsService {
       } else {
         // Insert new goal
         const result = await db.runAsync(
-          `INSERT INTO goals (name, type, progress, endDate)
-           VALUES (?, ?, ?, ?)`,
+          `INSERT INTO goals (name, type, progress, startDate, endDate)
+           VALUES (?, ?, ?, ?, ?)`,
           [
             goal.name,
             goal.type,
             goal.progress || null,
+            goal.startDate?.toISOString() || null,
             goal.endDate?.toISOString() || null
           ]
         );
@@ -90,6 +94,10 @@ class GoalsService {
       console.error('Error saving goal:', error);
       throw error;
     }
+  }
+
+  async deleteGoal(id: number): Promise<void> {
+    await db.runAsync('DELETE FROM goals WHERE id = ?', [id]);
   }
 }
 
