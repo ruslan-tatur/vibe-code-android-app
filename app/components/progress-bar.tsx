@@ -28,7 +28,6 @@ const styles = StyleSheet.create({
   progressBar: {
     height: '100%',
     backgroundColor: '#34c759',
-    // backgroundColor: 'linear-gradient(90deg, #34c759 0%, #30bced 100%)',
     borderRadius: 7,
   },
   progressText: {

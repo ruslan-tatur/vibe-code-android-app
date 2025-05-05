@@ -78,9 +78,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#e6f7ff',
     borderColor: '#30bced',
   },
-  section: {
-    marginBottom: 18,
-  },
   datePicker: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -79,25 +79,6 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  progressBarContainer: {
-    width: '75%',
-    height: 14,
-    backgroundColor: '#e0e0e0',
-    borderRadius: 7,
-    overflow: 'hidden',
-    marginRight: 12,
-  },
-  progressBar: {
-    height: '100%',
-    backgroundColor: 'linear-gradient(90deg, #34c759 0%, #30bced 100%)',
-    borderRadius: 7,
-  },
-  progressText: {
-    color: '#22223b',
-    fontWeight: '600',
-    fontSize: 16,
-    letterSpacing: 0.2,
-  }
 });
 
 const createDefaultGoal = async (): Promise<Goal> => {

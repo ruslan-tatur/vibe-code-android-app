@@ -61,7 +61,6 @@ class GoalsService {
     try {
       if (goal.id) {
         // Update existing goal
-        console.log('Updating goal:', goal);
         await db.runAsync(
           `UPDATE goals 
            SET name = ?, type = ?, progress = ?, startDate = ?, endDate = ?
@@ -75,9 +74,9 @@ class GoalsService {
             goal.id
           ]
         );
+
         return goal;
       } else {
-        console.log('Inserting new goal:', goal);
         // Insert new goal
         const result = await db.runAsync(
           `INSERT INTO goals (name, type, progress, startDate, endDate)

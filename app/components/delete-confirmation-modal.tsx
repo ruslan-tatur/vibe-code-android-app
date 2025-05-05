@@ -23,13 +23,16 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 20,
   },
-  deleteButton: {
+  button: {
     backgroundColor: '#fff',
     borderRadius: 12,
     paddingVertical: 14,
     marginBottom: 8,
+  },
+  deleteButton: {
     borderWidth: 1,
     borderColor: '#ff4d4f',
+    marginBottom: 8,
   },
   deleteButtonText: {
     color: '#ff3b30',
@@ -38,9 +41,7 @@ const styles = StyleSheet.create({
     textAlign: 'center'
   },
   cancelButton: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    paddingVertical: 14,
+    // No border for cancel button, no marginBottom
   },
   cancelButtonText: {
     color: '#007aff',
@@ -78,13 +79,13 @@ const DeleteConfirmationModal = ({
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.message}>{message}</Text>
       <TouchableOpacity
-        style={styles.deleteButton}
+        style={[styles.button, styles.deleteButton]}
         onPress={onDelete}
       >
         <Text style={styles.deleteButtonText}>{deleteLabel}</Text>
       </TouchableOpacity>
       <TouchableOpacity
-        style={styles.cancelButton}
+        style={[styles.button, styles.cancelButton, { marginBottom: 0 }]}
         onPress={onCancel}
       >
         <Text style={styles.cancelButtonText}>{cancelLabel}</Text>
