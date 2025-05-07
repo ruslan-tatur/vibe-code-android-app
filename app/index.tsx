@@ -48,7 +48,7 @@ const HamburgerIcon = ({ onPress }: { onPress: () => void }) => (
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f4f6fa',
+    backgroundColor: '#fff',
   },
   header: {
     backgroundColor: '#fff',
@@ -265,7 +265,7 @@ export default function Index() {
   const completedDots = Math.round(totalDots * (progressPercentage / 100));
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header - with hamburger menu */}
       <View style={styles.header}>
         <HamburgerIcon onPress={() => setMenuVisible(true)} />
