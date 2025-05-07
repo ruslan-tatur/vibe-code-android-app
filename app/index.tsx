@@ -265,7 +265,7 @@ export default function Index() {
   const completedDots = Math.round(totalDots * (progressPercentage / 100));
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       {/* Header - with hamburger menu */}
       <View style={styles.header}>
         <HamburgerIcon onPress={() => setMenuVisible(true)} />
@@ -312,6 +312,6 @@ export default function Index() {
 
       {/* Bottom line with text */}
       <ProgressBar percentage={progressPercentage} />
-    </View>
+    </SafeAreaView>
   );
 }
