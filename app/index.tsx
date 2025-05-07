@@ -1,21 +1,46 @@
-import { Text, View, LayoutChangeEvent, TouchableOpacity, StyleSheet } from "react-native";
-import { useState, useEffect } from "react";
-import Dot from "./components/dot";
-import MenuDrawer from "./components/menu-drawer";
-import GoalModal from "./components/goal-modal";
+import {
+  Text,
+  View,
+  LayoutChangeEvent,
+  TouchableOpacity,
+  StyleSheet,
+} from 'react-native';
+import { useState, useEffect } from 'react';
+import Dot from './components/dot';
+import MenuDrawer from './components/menu-drawer';
+import GoalModal from './components/goal-modal';
 import { Goal, GoalType } from './data/types';
-import { calculateProgress } from "./utils/progress";
-import { goalsService } from "./data/goals-service";
-import { useDatabaseReady } from "./providers/database-provider";
-import ProgressBar from "./components/progress-bar";
+import { calculateProgress } from './utils/progress';
+import { goalsService } from './data/goals-service';
+import { useDatabaseReady } from './providers/database-provider';
+import ProgressBar from './components/progress-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Hamburger menu icon component
 const HamburgerIcon = ({ onPress }: { onPress: () => void }) => (
   <TouchableOpacity onPress={onPress} style={{ padding: 10 }}>
-    <View style={{ width: 22, height: 2, backgroundColor: '#333', marginBottom: 5, borderRadius: 1 }} />
-    <View style={{ width: 22, height: 2, backgroundColor: '#333', marginBottom: 5, borderRadius: 1 }} />
-    <View style={{ width: 22, height: 2, backgroundColor: '#333', borderRadius: 1 }} />
+    <View
+      style={{
+        width: 22,
+        height: 2,
+        backgroundColor: '#333',
+        marginBottom: 5,
+        borderRadius: 1,
+      }}
+    />
+    <View
+      style={{
+        width: 22,
+        height: 2,
+        backgroundColor: '#333',
+        marginBottom: 5,
+        borderRadius: 1,
+      }}
+    />
+    <View
+      style={{ width: 22, height: 2, backgroundColor: '#333', borderRadius: 1 }}
+    />
   </TouchableOpacity>
 );
 
@@ -28,7 +53,7 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: '#fff',
     flexDirection: 'row',
-    alignItems: "center",
+    alignItems: 'center',
     paddingVertical: 22,
     paddingHorizontal: 20,
     shadowColor: '#000',
@@ -83,10 +108,10 @@ const styles = StyleSheet.create({
 
 const createDefaultGoal = async (): Promise<Goal> => {
   return await goalsService.saveGoal({
-    name: "New Goal",
+    name: 'New Goal',
     progress: 0,
     type: GoalType.Percentage,
-  })
+  });
 };
 
 export default function Index() {
@@ -125,7 +150,7 @@ export default function Index() {
         }
         setCurrentGoalIndex(index);
       } catch (error) {
-        console.error("Failed to load goals:", error);
+        console.error('Failed to load goals:', error);
         setGoals([await createDefaultGoal()]);
         setCurrentGoalIndex(0);
       }
@@ -173,7 +198,7 @@ export default function Index() {
       }
       setGoals(newGoals);
     } catch (error) {
-      console.error("Failed to save goal:", error);
+      console.error('Failed to save goal:', error);
     }
   };
 
@@ -208,7 +233,7 @@ export default function Index() {
 
       setMenuVisible(false);
     } catch (error) {
-      console.error("Failed to delete goal:", error);
+      console.error('Failed to delete goal:', error);
     }
   };
 
@@ -246,7 +271,9 @@ export default function Index() {
         <HamburgerIcon onPress={() => setMenuVisible(true)} />
         <View style={{ flex: 1, alignItems: 'center' }}>
           <TouchableOpacity onPress={() => editGoal(currentGoalIndex)}>
-            <Text style={styles.headerTitle}>{goals[currentGoalIndex].name}</Text>
+            <Text style={styles.headerTitle}>
+              {goals[currentGoalIndex].name}
+            </Text>
           </TouchableOpacity>
         </View>
         <View style={styles.headerSpacer} />
@@ -265,7 +292,9 @@ export default function Index() {
 
       <GoalModal
         visible={goalEditModalVisible}
-        initialGoal={editingGoalIndex !== null ? goals[editingGoalIndex] : undefined}
+        initialGoal={
+          editingGoalIndex !== null ? goals[editingGoalIndex] : undefined
+        }
         isEditing={editingGoalIndex !== null}
         onSave={saveGoal}
         onDelete={editingGoalIndex !== null ? deleteCurrentGoal : undefined}
@@ -273,13 +302,12 @@ export default function Index() {
       />
 
       {/* Main area with green blinky dots */}
-      <View
-        onLayout={handleMainAreaLayout}
-        style={styles.mainArea}
-      >
-        {Array(totalDots).fill(0).map((_, index) => (
-          <Dot key={index} isCompleted={index < completedDots} />
-        ))}
+      <View onLayout={handleMainAreaLayout} style={styles.mainArea}>
+        {Array(totalDots)
+          .fill(0)
+          .map((_, index) => (
+            <Dot key={index} isCompleted={index < completedDots} />
+          ))}
       </View>
 
       {/* Bottom line with text */}
