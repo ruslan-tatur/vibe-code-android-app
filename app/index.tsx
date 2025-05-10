@@ -15,7 +15,6 @@ import { goalsService } from './data/goals-service';
 import { useDatabaseReady } from './providers/database-provider';
 import ProgressBar from './components/progress-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Hamburger menu icon component
 const HamburgerIcon = ({ onPress }: { onPress: () => void }) => (
@@ -265,7 +264,7 @@ export default function Index() {
   const completedDots = Math.round(totalDots * (progressPercentage / 100));
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <>
       {/* Header - with hamburger menu */}
       <View style={styles.header}>
         <HamburgerIcon onPress={() => setMenuVisible(true)} />
@@ -312,6 +311,6 @@ export default function Index() {
 
       {/* Bottom line with text */}
       <ProgressBar percentage={progressPercentage} />
-    </SafeAreaView>
+    </>
   );
 }
